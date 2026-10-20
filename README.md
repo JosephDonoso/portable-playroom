@@ -2,7 +2,9 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.1.0: menú inicial, todavía sin juegos.** Esta versión permite abrir y explorar el menú desde el PC o desde otro dispositivo en la misma red. Aún no incluye salas de partida, QR de acceso, jugadores, cartas ni reglas. Esas funciones llegarán con los juegos.
+**v0.1.1: menú simplificado con tema oscuro, todavía sin juegos.** Esta versión permite abrir y explorar el menú desde el PC o desde otro dispositivo en la misma red. Aún no incluye salas de partida, QR de acceso, jugadores, cartas ni reglas. Esas funciones llegarán con los juegos.
+
+El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
 ## Descargar y abrir en Windows
 

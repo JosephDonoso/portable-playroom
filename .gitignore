@@ -1,0 +1,6 @@
+/dist/
+*.exe
+*.test
+*.log
+.DS_Store
+Thumbs.db

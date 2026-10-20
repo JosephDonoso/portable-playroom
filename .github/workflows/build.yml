@@ -1,0 +1,32 @@
+name: Validate and build Windows
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Test
+        run: go test ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Build portable executable
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Portable-Playroom-Windows-amd64
+          path: |
+            dist/Portable-Playroom-Windows-amd64.exe
+            dist/Portable-Playroom-Windows-amd64.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error

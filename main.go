@@ -13,13 +13,22 @@ import (
 	"time"
 )
 
-const version = "0.1.1"
+const version = "0.2.0"
 
 //go:embed web/* THIRD_PARTY_NOTICES.txt
 var assets embed.FS
 
 func handler(addresses []string) http.Handler {
 	mux := http.NewServeMux()
+	base := ""
+	if len(addresses) > 0 {
+		base = addresses[0]
+	}
+	uno := &app{g: newGame(), clients: map[*subscriber]bool{}, url: base, addresses: addresses}
+	mux.Handle("/uno/", http.StripPrefix("/uno", uno))
+	mux.HandleFunc("/uno", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/uno/", http.StatusTemporaryRedirect)
+	})
 	mux.HandleFunc("/api/info", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
@@ -31,7 +40,7 @@ func handler(addresses []string) http.Handler {
 			Version   string   `json:"version"`
 			Addresses []string `json:"addresses"`
 			Games     []string `json:"games"`
-		}{version, addresses, []string{}})
+		}{version, addresses, []string{"uno"}})
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {
@@ -159,7 +168,7 @@ func main() {
 	if len(addresses) > 0 {
 		fmt.Printf("Desde otro dispositivo en la misma red: %s\n", addresses[0])
 	}
-	fmt.Println("\nPrimera versión: menú inicial, todavía sin juegos.\nMantén esta ventana abierta. Para cerrar, presiona Ctrl+C o cierra esta ventana.")
+	fmt.Println("\nUNO disponible. Entra al juego desde el menú.\nMantén esta ventana abierta. Para cerrar, presiona Ctrl+C o cierra esta ventana.")
 	server := &http.Server{Handler: handler(addresses), ReadHeaderTimeout: 5 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 	if !*noBrowser {
 		openBrowser(local)

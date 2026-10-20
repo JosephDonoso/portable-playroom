@@ -24,7 +24,7 @@ func TestEmbeddedMenu(t *testing.T) {
 		})
 	}
 }
-func TestMenuHasNoGames(t *testing.T) {
+func TestMenuIncludesUno(t *testing.T) {
 	r := httptest.NewRecorder()
 	handler([]string{}).ServeHTTP(r, httptest.NewRequest("GET", "/api/info", nil))
 	var v struct {
@@ -35,7 +35,7 @@ func TestMenuHasNoGames(t *testing.T) {
 	if e := json.Unmarshal(r.Body.Bytes(), &v); e != nil {
 		t.Fatal(e)
 	}
-	if r.Code != 200 || v.Version != version || v.Games == nil || len(v.Games) != 0 || v.Addresses == nil {
+	if r.Code != 200 || v.Version != version || v.Games == nil || len(v.Games) != 1 || v.Games[0] != "uno" || v.Addresses == nil {
 		t.Fatal("Estado inicial incorrecto")
 	}
 	for _, route := range []string{"/play", "/api/join", "/api/action", "/events", "/game.go", "/../main.go"} {

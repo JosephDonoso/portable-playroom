@@ -20,11 +20,13 @@ type Player struct {
 	Hand            []Card
 }
 type Action struct {
-	Type  string `json:"type"`
-	Card  string `json:"card"`
-	Color string `json:"color"`
-	Uno   bool   `json:"uno"`
-	Token string `json:"token"`
+	Target           string `json:"target"`
+	ExpectedRevision int    `json:"expectedRevision"`
+	Type             string `json:"type"`
+	Card             string `json:"card"`
+	Color            string `json:"color"`
+	Uno              bool   `json:"uno"`
+	Token            string `json:"token"`
 }
 type Effect struct {
 	Type  string `json:"type"`
@@ -310,27 +312,29 @@ func (g *Game) act(p *Player, a Action) error {
 }
 
 type PublicPlayer struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Count int    `json:"count"`
-	Host  bool   `json:"host"`
+	Connection string `json:"connection"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Count      int    `json:"count"`
+	Host       bool   `json:"host"`
 }
 type State struct {
-	Revision  int            `json:"revision"`
-	Effect    *Effect        `json:"effect"`
-	Phase     string         `json:"phase"`
-	Round     int            `json:"round"`
-	Players   []PublicPlayer `json:"players"`
-	Top       *Card          `json:"top"`
-	Color     any            `json:"color"`
-	Turn      any            `json:"turn"`
-	Direction int            `json:"direction"`
-	Winner    any            `json:"winner"`
-	Events    []string       `json:"events"`
-	Me        any            `json:"me"`
-	Hand      []Card         `json:"hand"`
-	Drawn     any            `json:"drawn"`
-	Playable  []string       `json:"playable"`
+	CanSkipTurn bool           `json:"canSkipTurn"`
+	Revision    int            `json:"revision"`
+	Effect      *Effect        `json:"effect"`
+	Phase       string         `json:"phase"`
+	Round       int            `json:"round"`
+	Players     []PublicPlayer `json:"players"`
+	Top         *Card          `json:"top"`
+	Color       any            `json:"color"`
+	Turn        any            `json:"turn"`
+	Direction   int            `json:"direction"`
+	Winner      any            `json:"winner"`
+	Events      []string       `json:"events"`
+	Me          any            `json:"me"`
+	Hand        []Card         `json:"hand"`
+	Drawn       any            `json:"drawn"`
+	Playable    []string       `json:"playable"`
 }
 
 func nullable(s string) any {
@@ -342,7 +346,7 @@ func nullable(s string) any {
 func (g *Game) state(p *Player) State {
 	s := State{Revision: g.Revision, Effect: g.Effect, Phase: g.Phase, Round: g.Round, Players: []PublicPlayer{}, Top: g.Top, Color: nullable(g.Color), Direction: g.Direction, Winner: nullable(g.Winner), Events: append([]string{}, g.Events...), Hand: []Card{}, Playable: []string{}}
 	for i, x := range g.Players {
-		s.Players = append(s.Players, PublicPlayer{x.ID, x.Name, len(x.Hand), i == 0})
+		s.Players = append(s.Players, PublicPlayer{ID: x.ID, Name: x.Name, Count: len(x.Hand), Host: i == 0})
 	}
 	if len(g.Players) > 0 {
 		s.Turn = g.Players[g.Turn].ID

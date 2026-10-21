@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.2.0: UNO integrado al menú oscuro.** Incluye sala de espera con QR, manos privadas, turnos destacados, selección visual de color y animaciones de cartas y efectos.
+**v0.2.1: estado de conexión y salto de turnos desconectados.** Incluye UNO con sala de espera, QR, manos privadas, turnos destacados, selección visual de color y animaciones.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -20,6 +20,14 @@ El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda d
 Mantén la consola abierta mientras uses la aplicación. Para detenerla, presiona `Ctrl+C` en esa ventana o ciérrala. Cerrar solamente la pestaña del navegador no detiene el servidor.
 
 **Cerrar el servidor borra la partida.** Recargar el mismo navegador recupera tu lugar mientras el servidor siga abierto. Cada jugador debe usar su propio dispositivo o un perfil de navegador independiente: las pestañas del mismo navegador comparten la identidad.
+
+### Jugadores desconectados
+
+Cada jugador muestra **Conectado**, **Reconectando…** o **Desconectado**, tanto en la tele como en los teléfonos. Al detectar una desconexión se conceden 8 segundos para regresar. Si es el turno de ese jugador y sigue ausente, el anfitrión puede pulsar **Saltar su turno** desde su teléfono. El salto no roba ni elimina cartas, conserva su asiento y respeta el sentido de juego. No es automático: si llega otro turno del mismo jugador, el anfitrión decide de nuevo.
+
+Cerrar una pestaña se detecta al cerrarse su conexión. Un corte silencioso de Wi-Fi puede tardar unos 9 segundos en detectarse antes del margen de 8 segundos, más un pequeño intervalo de actualización. Se comprueba actividad cada 3 segundos. Si hay varias pestañas del mismo jugador, sigue conectado mientras una mantenga la conexión y la actividad. Un teléfono que suspenda el navegador en segundo plano también puede aparecer como desconectado; al volver a abrirlo recupera su estado.
+
+El servidor comprueba que quien solicita el salto sea el anfitrión y que el turno siga siendo el mismo. Si el jugador se reconecta antes de procesar el salto, este se rechaza. El anfitrión no se reemplaza automáticamente si se desconecta.
 
 Si Windows solicita permiso de firewall, permite el acceso en redes privadas para abrir el menú desde otros dispositivos. El ejecutable todavía no está firmado digitalmente, por lo que Windows puede mostrar un aviso al descargarlo o ejecutarlo.
 
@@ -89,9 +97,12 @@ GitHub Actions comprueba el código y genera el ejecutable en cada actualizació
 ```text
 main.go                  Servidor local y apertura del navegador
 uno.go                   API de UNO y sincronización con los dispositivos
+presence.go              Estado de conexión y salto autorizado por el anfitrión
 game.go                  Reglas y vistas privadas de la partida
 main_test.go             Pruebas de rutas, recursos y puertos
 game_test.go             Pruebas de reglas, turnos y privacidad
+presence_test.go         Pruebas de conexión, reconexión y permisos de salto
+uno_connection_test.go   Pruebas de pérdida de conexión y recuperación de identidad
 web/                     Menú e interfaz de UNO incrustados en el ejecutable
 scripts/                 Compilación y empaquetado
 .github/workflows/       Validación y compilación en GitHub

@@ -15,6 +15,7 @@ type subscriber struct {
 	updates chan []byte
 }
 type app struct {
+	presence  map[string]*presenceEntry
 	mu        sync.Mutex
 	g         *Game
 	clients   map[*subscriber]bool
@@ -23,7 +24,16 @@ type app struct {
 }
 
 func (a *app) snapshot(p *Player) []byte {
-	b, e := json.Marshal(a.g.state(p))
+	a.updatePresence(time.Now())
+	state := a.g.state(p)
+	for i := range state.Players {
+		state.Players[i].Connection = a.presence[state.Players[i].ID].status
+	}
+	if a.g.Phase == "playing" && p != nil && p == a.g.Players[0] {
+		current := a.g.Players[a.g.Turn]
+		state.CanSkipTurn = current != p && a.presence[current.ID].status == "disconnected"
+	}
+	b, e := json.Marshal(state)
 	if e != nil {
 		panic(e)
 	}
@@ -95,7 +105,7 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	if r.Method == "POST" && (r.URL.Path == "/api/join" || r.URL.Path == "/api/action") {
+	if r.Method == "POST" && (r.URL.Path == "/api/join" || r.URL.Path == "/api/action" || r.URL.Path == "/api/heartbeat") {
 		a.mu.Lock()
 		defer a.mu.Unlock()
 		fail := func(e error) { reply(w, 400, map[string]string{"error": e.Error()}) }
@@ -123,7 +133,25 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		player := a.g.find(b.Token)
-		if e := a.g.act(player, b); e != nil {
+		if r.URL.Path == "/api/heartbeat" {
+			if player == nil {
+				fail(fmt.Errorf("Vuelve a entrar a la sala."))
+				return
+			}
+			a.touch(player, time.Now())
+			if a.updatePresence(time.Now()) {
+				a.broadcast()
+			}
+			reply(w, 200, map[string]bool{"ok": true})
+			return
+		}
+		var actionErr error
+		if b.Type == "skipDisconnected" {
+			actionErr = a.skipDisconnected(player, b)
+		} else {
+			actionErr = a.g.act(player, b)
+		}
+		if e := actionErr; e != nil {
 			fail(e)
 			return
 		}
@@ -149,10 +177,13 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 	a.mu.Lock()
 	s := &subscriber{a.g.find(r.URL.Query().Get("token")), make(chan []byte, 1)}
 	a.clients[s] = true
-	s.updates <- a.snapshot(s.p)
+	if s.p != nil {
+		a.touch(s.p, time.Now())
+	}
+	a.broadcast()
 	a.mu.Unlock()
-	defer func() { a.mu.Lock(); delete(a.clients, s); a.mu.Unlock() }()
-	ticker := time.NewTicker(20 * time.Second)
+	defer func() { a.mu.Lock(); delete(a.clients, s); a.updatePresence(time.Now()); a.broadcast(); a.mu.Unlock() }()
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	send := func(b []byte) error {
 		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(10 * time.Second))
@@ -171,6 +202,11 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		case <-ticker.C:
+			a.mu.Lock()
+			if a.updatePresence(time.Now()) {
+				a.broadcast()
+			}
+			a.mu.Unlock()
 			if send([]byte(": ping\n\n")) != nil {
 				return
 			}

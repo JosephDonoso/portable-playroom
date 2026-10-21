@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.4.1: interfaz estable y aviso de turno mediante borde e iluminación.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.4.2: vista compacta para celulares y controles de partida en la tele.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -60,6 +60,12 @@ Mantener el dedo en un borde desplaza la mano continuamente en esa dirección, m
 La mano usa cartas superpuestas, con margen lateral para ampliar las cartas de los extremos sin recortarlas. Solo la carta seleccionada se eleva; los eventos de ratón emulados después de un toque no cambian la selección. En el teléfono, toca o desliza el dedo sobre ellas para ampliar la carta seleccionada; luego pulsa **Jugar carta**. Deslizar no juega una carta accidentalmente. El borde de la mano permite desplazarse cuando tienes muchas cartas. En PC puedes inspeccionar con el ratón o el teclado y jugar haciendo clic en una carta válida. Las cartas que no sirven también pueden inspeccionarse. El selector de color aparece después de confirmar un comodín.
 
 De 2 a 10 jugadores, 7 cartas por persona. Juega por color o símbolo. +4 se permite aunque tengas cartas del color actual. Bloqueo y reversa siguen activos; con dos jugadores, reversa permite jugar de nuevo. Marca **¡UNO!** antes de jugar tu penúltima carta: olvidarlo añade dos cartas.
+
+### Controles desde la tele
+
+En el PC anfitrión, abre la mesa mediante `http://localhost:3000/uno/` (o el puerto indicado). **Terminar partida** cierra la ronda y devuelve a los teléfonos a la sala, conservando los jugadores y las opciones. **Menú de juegos** termina la ronda en curso y vuelve al selector de juegos. Estos controles se habilitan en el propio PC.
+
+La vista del celular reúne una mesa más pequeña, la mano y botones de al menos 44 px; el historial está plegado en **Últimas jugadas**. Los jugadores aparecen en una fila horizontal y conservan sus indicadores de conexión.
 
 ### Opciones del anfitrión
 

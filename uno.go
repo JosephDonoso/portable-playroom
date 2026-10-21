@@ -4,11 +4,39 @@ import (
 	"encoding/json"
 	"fmt"
 	qrcode "github.com/skip2/go-qrcode"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
 )
+
+func localTable(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return err == nil && net.ParseIP(host).IsLoopback()
+}
+
+func (a *app) endFromTable(w http.ResponseWriter, r *http.Request) {
+	origin, err := url.Parse(r.Header.Get("Origin"))
+	if !localTable(r) || err != nil || origin.Host != r.Host || origin.Scheme != "http" {
+		reply(w, http.StatusForbidden, map[string]string{"error": "Usa la pantalla de la tele en el PC anfitrión."})
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	previous := a.g
+	a.g = newGame()
+	a.g.Players, a.g.Options, a.g.Round = previous.Players, previous.Options, previous.Round
+	a.g.Revision = previous.Revision + 1
+	for _, p := range a.g.Players {
+		p.Hand = []Card{}
+	}
+	a.g.note("La partida terminó desde la pantalla compartida.")
+	a.scheduleClock()
+	a.broadcast()
+	reply(w, http.StatusOK, map[string]bool{"ok": true})
+}
 
 type subscriber struct {
 	p       *Player
@@ -63,10 +91,14 @@ func decode(w http.ResponseWriter, r *http.Request, v any) error {
 }
 func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
+	if r.Method == "POST" && r.URL.Path == "/api/table/end" {
+		a.endFromTable(w, r)
+		return
+	}
 	if r.Method == "GET" {
 		switch r.URL.Path {
 		case "/api/info":
-			reply(w, 200, map[string]any{"url": a.url, "addresses": a.addresses})
+			reply(w, 200, map[string]any{"url": a.url, "addresses": a.addresses, "tableControl": localTable(r)})
 			return
 		case "/qr":
 			b, e := qrcode.Encode(a.url+"/uno/play", qrcode.Medium, 230)

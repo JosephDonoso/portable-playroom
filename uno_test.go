@@ -11,7 +11,7 @@ import (
 
 func TestUnoRoutes(t *testing.T) {
 	h := handler([]string{"http://192.168.1.88:3000"})
-	for route, kind := range map[string]string{"/uno/": "text/html", "/uno/play": "text/html", "/uno/app.js": "text/javascript", "/uno/motion.js": "text/javascript", "/uno/style.css": "text/css", "/uno/qr": "image/png"} {
+	for route, kind := range map[string]string{"/uno/": "text/html", "/uno/play": "text/html", "/uno/app.js": "text/javascript", "/uno/motion.js": "text/javascript", "/uno/room-rules.js": "text/javascript", "/uno/style.css": "text/css", "/uno/qr": "image/png"} {
 		r := httptest.NewRecorder()
 		h.ServeHTTP(r, httptest.NewRequest("GET", route, nil))
 		if r.Code != 200 || !strings.HasPrefix(r.Header().Get("Content-Type"), kind) {

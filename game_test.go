@@ -111,10 +111,6 @@ func TestWildFour(t *testing.T) {
 	g := setup(t, 3)
 	p := g.Players[0]
 	p.Hand = append(p.Hand, Card{"w", "wild", "draw4"})
-	if g.act(p, Action{Type: "play", Card: "w", Color: "green"}) == nil {
-		t.Fatal("+4 ilegal aceptado")
-	}
-	p.Hand = p.Hand[1:]
 	if g.act(p, Action{Type: "play", Card: "w", Color: "purple"}) == nil {
 		t.Fatal("Color inválido")
 	}

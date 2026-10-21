@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.3.2: mano ordenada y desplazamiento automático en los bordes.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.4.0: reloj de turno, opciones del anfitrión y acumulaciones de +2/+4.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -59,9 +59,32 @@ Mantener el dedo en un borde desplaza la mano continuamente en esa dirección, m
 
 La mano usa cartas superpuestas, con margen lateral para ampliar las cartas de los extremos sin recortarlas. Solo la carta seleccionada se eleva; los eventos de ratón emulados después de un toque no cambian la selección. En el teléfono, toca o desliza el dedo sobre ellas para ampliar la carta seleccionada; luego pulsa **Jugar carta**. Deslizar no juega una carta accidentalmente. El borde de la mano permite desplazarse cuando tienes muchas cartas. En PC puedes inspeccionar con el ratón o el teclado y jugar haciendo clic en una carta válida. Las cartas que no sirven también pueden inspeccionarse. El selector de color aparece después de confirmar un comodín.
 
-De 2 a 10 jugadores, 7 cartas por persona. Se juega por color o símbolo. Tras robar una carta válida puedes jugar esa carta o pasar; si no sirve, el turno avanza automáticamente. +2 y +4 hacen robar y perder el turno, sin acumulación. +4 solo se permite si no tienes el color actual. En dos jugadores, reversa permite jugar de nuevo. Marca **¡UNO!** antes de jugar tu penúltima carta: olvidarlo suma dos cartas automáticamente. Gana quien se queda sin cartas.
+De 2 a 10 jugadores, 7 cartas por persona. Juega por color o símbolo. +4 se permite aunque tengas cartas del color actual. Bloqueo y reversa siguen activos; con dos jugadores, reversa permite jugar de nuevo. Marca **¡UNO!** antes de jugar tu penúltima carta: olvidarlo añade dos cartas.
 
-Sin desafíos de +4, puntuación acumulada, límite de tiempo, expulsión de jugadores ni guardado en disco. Una sala UNO por ejecutable; al terminar se puede iniciar otra ronda o abrir la sala para nuevos jugadores. Proyecto independiente, sin afiliación con los titulares de UNO.
+### Opciones del anfitrión
+
+Se configuran antes de iniciar cada ronda, desde su teléfono. Se guardan con **Guardar opciones** o automáticamente al iniciar:
+
+- **Tiempo por turno:** 0 para desactivarlo; entre 5 y 600 segundos para activarlo. Cuenta regresiva visible en tele y teléfonos, con aviso visual en los últimos cinco segundos.
+- **Robo:** una carta o robar hasta encontrar una que se pueda jugar. La carta válida recién robada es la única que se puede jugar después del robo. Si se agota el mazo disponible, el turno avanza sin bloquearse.
+- **Jugada obligatoria:** si está activada, no puedes robar ni pasar si tienes una carta válida; tampoco pasar después de robar una válida. Si está desactivada, puedes robar voluntariamente o pasar si tienes una carta disponible.
+- **Mezclar +2 y +4:** permite combinar ambos tipos en una misma deuda, con la restricción de color explicada abajo.
+
+El reloj lo controla el servidor, incluso sin navegadores abiertos. Robar no reinicia el contador. Al agotarse, el jugador recibe la deuda pendiente y pierde el turno; si no hay deuda, roba según el modo configurado y pasa. Si ya había robado una carta válida, no roba otra vez al vencer el tiempo. El reloj sigue corriendo si se pierde la conexión.
+
+### Acumulaciones: reglas fijas
+
+- **+2 sobre +2** siempre se acumula, aunque cambie el color.
+- **+4 sobre +4** siempre se acumula.
+- Si se activa la mezcla: **+4 sobre +2** es válido; **+2 sobre +4** solo si ese +2 tiene el color elegido por el +4.
+- No se puede responder con bloqueo, reversa, un número ni un comodín normal a una deuda.
+- Si el siguiente jugador no tiene una carta válida para acumular, recibe automáticamente el total y pierde el turno. Si tiene una y la jugada no es obligatoria, puede elegir **Recibir +N** en lugar de acumular.
+- La deuda pendiente aparece en ambas interfaces. Cuando se cobra automáticamente, también se muestra quién recibió cuántas cartas. Si el mazo no alcanza, se entregan las disponibles y se informa la cantidad real.
+- Saltar por desconexión o vencer el tiempo no evita pagar la deuda.
+
+Una última carta +2 o +4 todavía puede recibir respuesta: la victoria se decide al resolver la deuda, entre quienes sigan sin cartas, priorizando a quien se quedó sin ellas primero. Así, una acumulación que vuelve al jugador puede obligarlo a robar y evitar su victoria.
+
+Sin desafíos de +4, puntuación acumulada, expulsión de jugadores ni guardado en disco. Una sala UNO por ejecutable. Proyecto independiente, sin afiliación con los titulares de UNO.
 
 ## Desarrollo
 
@@ -109,6 +132,8 @@ main.go                  Servidor local y apertura del navegador
 uno.go                   API de UNO y sincronización con los dispositivos
 presence.go              Estado de conexión y salto autorizado por el anfitrión
 game.go                  Reglas y vistas privadas de la partida
+rules.go                 Opciones, acumulaciones y reloj del servidor
+rules_test.go            Pruebas de opciones, cadenas, vencimientos y fin de ronda
 web/uno/motion.js         Recorridos de cartas, pila e inspección de la mano
 tests/motion.test.cjs     Pruebas de gestos y descarte estable
 main_test.go             Pruebas de rutas, recursos y puertos

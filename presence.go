@@ -72,6 +72,10 @@ func (a *app) skipDisconnected(host *Player, action Action) error {
 		return fmt.Errorf("El jugador está conectado o aún tiene margen para reconectarse.")
 	}
 	a.g.note(fmt.Sprintf("%s saltó el turno de %s (desconectado).", host.Name, target.Name))
-	a.g.next(1)
+	if a.g.Pending > 0 {
+		a.g.payPending(target)
+	} else {
+		a.g.next(1)
+	}
 	return nil
 }

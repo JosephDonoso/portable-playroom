@@ -15,6 +15,7 @@ type subscriber struct {
 	updates chan []byte
 }
 type app struct {
+	timer     *time.Timer
 	presence  map[string]*presenceEntry
 	mu        sync.Mutex
 	g         *Game
@@ -85,7 +86,7 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write(b)
 			return
 		default:
-			files := map[string]string{"/": "index.html", "/play": "index.html", "/app.js": "app.js", "/motion.js": "motion.js", "/style.css": "style.css"}
+			files := map[string]string{"/": "index.html", "/play": "index.html", "/app.js": "app.js", "/motion.js": "motion.js", "/room-rules.js": "room-rules.js", "/style.css": "style.css"}
 			if f, ok := files[r.URL.Path]; ok {
 				b, e := assets.ReadFile("web/uno/" + f)
 				if e != nil {
@@ -132,6 +133,7 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fail(fmt.Errorf("Solicitud inválida."))
 			return
 		}
+		a.expireIfNeeded(time.Now())
 		player := a.g.find(b.Token)
 		if r.URL.Path == "/api/heartbeat" {
 			if player == nil {
@@ -160,6 +162,7 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if b.Type == "play" {
 			a.g.Effect.Value = a.g.Top.Value
 		}
+		a.scheduleClock()
 		reply(w, 200, map[string]bool{"ok": true})
 		a.broadcast()
 		return
@@ -176,6 +179,7 @@ func (a *app) events(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Accel-Buffering", "no")
 	a.mu.Lock()
 	s := &subscriber{a.g.find(r.URL.Query().Get("token")), make(chan []byte, 1)}
+	a.expireIfNeeded(time.Now())
 	a.clients[s] = true
 	if s.p != nil {
 		a.touch(s.p, time.Now())

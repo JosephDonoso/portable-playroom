@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"slices"
 	"strings"
+	"time"
 )
 
 type Card struct {
@@ -20,13 +21,14 @@ type Player struct {
 	Hand            []Card
 }
 type Action struct {
-	Target           string `json:"target"`
-	ExpectedRevision int    `json:"expectedRevision"`
-	Type             string `json:"type"`
-	Card             string `json:"card"`
-	Color            string `json:"color"`
-	Uno              bool   `json:"uno"`
-	Token            string `json:"token"`
+	Options          *Options `json:"options"`
+	Target           string   `json:"target"`
+	ExpectedRevision int      `json:"expectedRevision"`
+	Type             string   `json:"type"`
+	Card             string   `json:"card"`
+	Color            string   `json:"color"`
+	Uno              bool     `json:"uno"`
+	Token            string   `json:"token"`
 }
 type Effect struct {
 	Type  string `json:"type"`
@@ -34,6 +36,12 @@ type Effect struct {
 	Value string `json:"value"`
 }
 type Game struct {
+	Options                Options
+	Deadline               time.Time
+	Pending                int
+	PendingKind            string
+	LastPayment            *PenaltyPayment
+	FinishCandidates       []string
 	Revision               int
 	Effect                 *Effect
 	Players                []*Player
@@ -139,6 +147,10 @@ func (g *Game) start(p *Player) error {
 	g.Drawn = ""
 	g.Winner = ""
 	g.Round++
+	g.Pending = 0
+	g.PendingKind = ""
+	g.LastPayment = nil
+	g.FinishCandidates = nil
 	for _, p := range g.Players {
 		p.Hand = append([]Card{}, g.Pile[:7]...)
 		g.Pile = g.Pile[7:]
@@ -153,6 +165,7 @@ func (g *Game) start(p *Player) error {
 		}
 	}
 	g.Phase = "playing"
+	g.resetDeadline()
 	g.note(fmt.Sprintf("¡Comienza la ronda %d! Turno de %s.", g.Round, g.Players[0].Name))
 	return nil
 }
@@ -174,21 +187,15 @@ func (g *Game) take(p *Player, n int) {
 func (g *Game) next(steps int) {
 	g.Turn = (g.Turn + g.Direction*steps + len(g.Players)*steps) % len(g.Players)
 	g.Drawn = ""
+	g.resetDeadline()
 }
 func (g *Game) playable(c Card, p *Player) bool {
-	if c.Color == "wild" {
-		if c.Value != "draw4" {
-			return true
-		}
-		for _, x := range p.Hand {
-			if x.Color == g.Color {
-				return false
-			}
-		}
-		return true
+	if g.Pending > 0 {
+		return g.canStack(c)
 	}
-	return c.Color == g.Color || g.Top != nil && c.Value == g.Top.Value
+	return c.Color == "wild" || c.Color == g.Color || g.Top != nil && c.Value == g.Top.Value
 }
+
 func label(c Card) string {
 	if s, ok := map[string]string{"skip": "salto", "reverse": "reversa", "draw2": "+2", "wild": "comodín", "draw4": "+4"}[c.Value]; ok {
 		return s
@@ -198,6 +205,9 @@ func label(c Card) string {
 func (g *Game) act(p *Player, a Action) error {
 	if p == nil {
 		return errors.New("Vuelve a entrar a la sala.")
+	}
+	if a.Type == "configure" {
+		return g.configure(p, a.Options)
 	}
 	if a.Type == "start" {
 		return g.start(p)
@@ -211,6 +221,10 @@ func (g *Game) act(p *Player, a Action) error {
 			x.Hand = []Card{}
 		}
 		g.Top = nil
+		g.Pending = 0
+		g.PendingKind = ""
+		g.LastPayment = nil
+		g.Deadline = time.Time{}
 		return nil
 	}
 	if g.Phase != "playing" {
@@ -221,22 +235,33 @@ func (g *Game) act(p *Player, a Action) error {
 	}
 	if a.Type == "draw" {
 		if g.Drawn != "" {
-			return errors.New("Ya robaste una carta. Puedes jugarla o pasar.")
+			return errors.New("Ya robaste. Juega esa carta o pasa si las reglas lo permiten.")
 		}
-		before := len(p.Hand)
-		g.take(p, 1)
-		g.note(p.Name + " robó una carta.")
-		if len(p.Hand) == before || !g.playable(p.Hand[len(p.Hand)-1], p) {
+		if g.Options.ForcePlay && g.hasPlayable(p) {
+			return errors.New("Debes jugar una carta disponible.")
+		}
+		g.LastPayment = nil
+		if g.Pending > 0 {
+			g.payPending(p)
+			return nil
+		}
+		g.drawForTurn(p)
+		if g.Drawn == "" {
 			g.next(1)
-		} else {
-			g.Drawn = p.Hand[len(p.Hand)-1].ID
 		}
 		return nil
 	}
 	if a.Type == "pass" {
-		if g.Drawn == "" {
+		if g.Pending > 0 {
+			return errors.New("Debes acumular o recibir la deuda; no puedes pasar.")
+		}
+		if g.Options.ForcePlay && g.hasPlayable(p) {
+			return errors.New("Debes jugar la carta disponible.")
+		}
+		if g.Drawn == "" && !g.hasPlayable(p) {
 			return errors.New("Debes robar antes de pasar.")
 		}
+		g.LastPayment = nil
 		g.note(p.Name + " pasó.")
 		g.next(1)
 		return nil
@@ -259,11 +284,12 @@ func (g *Game) act(p *Player, a Action) error {
 		return errors.New("Solo puedes jugar la carta que acabas de robar.")
 	}
 	if !g.playable(c, p) {
-		return errors.New("La carta debe coincidir en color o símbolo. +4 solo si no tienes el color actual.")
+		return errors.New("Esa carta no coincide con el color, símbolo o acumulación pendiente.")
 	}
 	if c.Color == "wild" && !slices.Contains(colors, a.Color) {
 		return errors.New("Elige un color para el comodín.")
 	}
+	g.LastPayment = nil
 	p.Hand = append(p.Hand[:index], p.Hand[index+1:]...)
 	g.Top = &c
 	g.Discard = append(g.Discard, c)
@@ -291,23 +317,24 @@ func (g *Game) act(p *Player, a Action) error {
 		steps = 2
 	}
 	if c.Value == "draw2" || c.Value == "draw4" {
-		victim := g.Players[(g.Turn+g.Direction+len(g.Players))%len(g.Players)]
 		n := 2
 		if c.Value == "draw4" {
 			n = 4
 		}
-		g.take(victim, n)
-		g.note(fmt.Sprintf("%s robó %d y pierde su turno.", victim.Name, n))
-		steps = 2
-	}
-	if len(p.Hand) == 0 {
-		g.Phase = "finished"
-		g.Winner = p.ID
-		g.note("¡" + p.Name + " ganó la ronda!")
-		g.Drawn = ""
+		g.Pending += n
+		g.PendingKind = c.Value
+		g.note(fmt.Sprintf("La deuda acumulada es +%d.", g.Pending))
+		if len(p.Hand) == 0 {
+			g.FinishCandidates = append(g.FinishCandidates, p.ID)
+		}
+		g.next(1)
+		g.settlePending()
+	} else if len(p.Hand) == 0 {
+		g.win(p)
 	} else {
 		g.next(steps)
 	}
+
 	return nil
 }
 
@@ -319,23 +346,31 @@ type PublicPlayer struct {
 	Host       bool   `json:"host"`
 }
 type State struct {
-	RecentDiscards []Card         `json:"recentDiscards"`
-	CanSkipTurn    bool           `json:"canSkipTurn"`
-	Revision       int            `json:"revision"`
-	Effect         *Effect        `json:"effect"`
-	Phase          string         `json:"phase"`
-	Round          int            `json:"round"`
-	Players        []PublicPlayer `json:"players"`
-	Top            *Card          `json:"top"`
-	Color          any            `json:"color"`
-	Turn           any            `json:"turn"`
-	Direction      int            `json:"direction"`
-	Winner         any            `json:"winner"`
-	Events         []string       `json:"events"`
-	Me             any            `json:"me"`
-	Hand           []Card         `json:"hand"`
-	Drawn          any            `json:"drawn"`
-	Playable       []string       `json:"playable"`
+	Options        Options         `json:"options"`
+	DeadlineMS     int64           `json:"deadlineMS"`
+	ServerNowMS    int64           `json:"serverNowMS"`
+	Pending        int             `json:"pending"`
+	PendingKind    string          `json:"pendingKind"`
+	LastPayment    *PenaltyPayment `json:"lastPayment"`
+	CanDraw        bool            `json:"canDraw"`
+	CanPass        bool            `json:"canPass"`
+	RecentDiscards []Card          `json:"recentDiscards"`
+	CanSkipTurn    bool            `json:"canSkipTurn"`
+	Revision       int             `json:"revision"`
+	Effect         *Effect         `json:"effect"`
+	Phase          string          `json:"phase"`
+	Round          int             `json:"round"`
+	Players        []PublicPlayer  `json:"players"`
+	Top            *Card           `json:"top"`
+	Color          any             `json:"color"`
+	Turn           any             `json:"turn"`
+	Direction      int             `json:"direction"`
+	Winner         any             `json:"winner"`
+	Events         []string        `json:"events"`
+	Me             any             `json:"me"`
+	Hand           []Card          `json:"hand"`
+	Drawn          any             `json:"drawn"`
+	Playable       []string        `json:"playable"`
 }
 
 func nullable(s string) any {
@@ -345,7 +380,10 @@ func nullable(s string) any {
 	return s
 }
 func (g *Game) state(p *Player) State {
-	s := State{Revision: g.Revision, Effect: g.Effect, Phase: g.Phase, Round: g.Round, Players: []PublicPlayer{}, Top: g.Top, Color: nullable(g.Color), Direction: g.Direction, Winner: nullable(g.Winner), Events: append([]string{}, g.Events...), Hand: []Card{}, Playable: []string{}}
+	s := State{Options: g.Options, Pending: g.Pending, PendingKind: g.PendingKind, LastPayment: g.LastPayment, ServerNowMS: time.Now().UnixMilli(), Revision: g.Revision, Effect: g.Effect, Phase: g.Phase, Round: g.Round, Players: []PublicPlayer{}, Top: g.Top, Color: nullable(g.Color), Direction: g.Direction, Winner: nullable(g.Winner), Events: append([]string{}, g.Events...), Hand: []Card{}, Playable: []string{}}
+	if !g.Deadline.IsZero() {
+		s.DeadlineMS = g.Deadline.UnixMilli()
+	}
 	start := len(g.Discard) - 5
 	if start < 0 {
 		start = 0
@@ -363,6 +401,8 @@ func (g *Game) state(p *Player) State {
 		if len(g.Players) > 0 && g.Players[g.Turn] == p {
 			s.Drawn = nullable(g.Drawn)
 			if g.Phase == "playing" {
+				s.CanDraw = g.Drawn == "" && (!g.Options.ForcePlay || !g.hasPlayable(p))
+				s.CanPass = g.Pending == 0 && !g.Options.ForcePlay && (g.Drawn != "" || g.hasPlayable(p))
 				for _, c := range p.Hand {
 					if (g.Drawn == "" || g.Drawn == c.ID) && g.playable(c, p) {
 						s.Playable = append(s.Playable, c.ID)

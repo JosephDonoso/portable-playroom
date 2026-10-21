@@ -73,3 +73,8 @@ test('Returning to the center or cancelling stops automatic movement',()=>{
  f.handlers.pointermove(f.event(f.cards[1],90));const center=f.hand.scrollLeft;f.step();f.step();assert.equal(f.hand.scrollLeft,center);
  f.handlers.pointermove(f.event(f.cards[2],175));f.step();f.handlers.pointercancel();const stopped=f.hand.scrollLeft;f.step();assert.equal(f.hand.scrollLeft,stopped);assert.equal(f.frames.size,0);assert.equal(f.played,null);
 });
+
+test('Countdown uses server time and elapsed monotonic time without going negative',()=>{
+ const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../web/uno/room-rules.js'),'utf8'),context);const r=context.window.RoomRules;
+ assert.equal(r.secondsRemaining(31000,1000,0),30);assert.equal(r.secondsRemaining(31000,1000,12500),18);assert.equal(r.secondsRemaining(31000,1000,45000),0);assert.equal(r.formatSeconds(65),'1:05');assert.equal(r.formatSeconds(0),'0:00');
+});

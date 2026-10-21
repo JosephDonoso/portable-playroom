@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.4.0: reloj de turno, opciones del anfitrión y acumulaciones de +2/+4.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.4.1: interfaz estable y aviso de turno mediante borde e iluminación.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -49,7 +49,7 @@ El puerto inicial es `3000`. Si está ocupado, el programa busca el siguiente di
 
 ## UNO: controles y reglas
 
-Una franja violeta **¡ES TU TURNO!** indica cuándo puedes jugar. Toca una carta iluminada o roba del mazo. Al tocar un comodín, aparece una ventana con cuatro botones grandes de color; puedes cancelar antes de jugar. Hay animaciones al robar, recibir y jugar cartas, y efectos para bloqueo, reversa, +2, +4 y cambio de color. Se respeta la preferencia de movimiento reducido del dispositivo.
+Un borde violeta en el teléfono indica cuándo puedes jugar. El centro de la mesa se atenúa mientras esperas y recupera su iluminación cuando te toca. El turno, el reloj y la acumulación ocupan espacios fijos para que la mano y los controles no salten al cambiar los avisos. Toca una carta iluminada o roba del mazo. Al tocar un comodín, aparece una ventana con cuatro botones grandes de color; puedes cancelar antes de jugar. Hay animaciones al robar, recibir y jugar cartas, y efectos para bloqueo, reversa, +2, +4 y cambio de color. Se respeta la preferencia de movimiento reducido del dispositivo.
 
 Las cartas salen visualmente del mazo y viajan a la mano; al jugarlas, viajan al descarte. Los movimientos de otros jugadores muestran únicamente dorsos. Las últimas cinco cartas públicas forman una pila con ángulos y desplazamientos estables, también al reconectar. El reparto se anima carta por carta; reconectarse no repite movimientos antiguos.
 

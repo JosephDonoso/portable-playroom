@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const version = "0.4.3"
+const version = "0.5.0"
 
 //go:embed web/* THIRD_PARTY_NOTICES.txt
 var assets embed.FS
@@ -25,6 +25,11 @@ func handler(addresses []string) http.Handler {
 		base = addresses[0]
 	}
 	uno := &app{g: newGame(), clients: map[*subscriber]bool{}, url: base, addresses: addresses}
+	catan := catNewApp(base)
+	mux.Handle("/catan/", http.StripPrefix("/catan", catan))
+	mux.HandleFunc("/catan", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/catan/", http.StatusTemporaryRedirect)
+	})
 	mux.Handle("/uno/", http.StripPrefix("/uno", uno))
 	mux.HandleFunc("/uno", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/uno/", http.StatusTemporaryRedirect)
@@ -40,7 +45,7 @@ func handler(addresses []string) http.Handler {
 			Version   string   `json:"version"`
 			Addresses []string `json:"addresses"`
 			Games     []string `json:"games"`
-		}{version, addresses, []string{"uno"}})
+		}{version, addresses, []string{"uno", "catan"}})
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" && r.Method != "HEAD" {

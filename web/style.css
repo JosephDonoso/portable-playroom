@@ -13,3 +13,5 @@
 [data-theme="dark"] a:focus-visible,[data-theme="dark"] button:focus-visible,[data-theme="dark"] summary:focus-visible{outline-color:#b8a7ff}
 
 .game-entry{display:flex;align-items:center;gap:24px;padding:30px;background:#21242c;border:1px solid #373c48;border-radius:16px;flex-wrap:wrap}.uno-logo{background:#b8a7ff;color:#211b37;display:grid;place-items:center;font-size:26px;font-weight:900;font-style:italic;width:90px;height:115px;border-radius:12px;transform:rotate(-7deg)}.game-entry h2{margin:0 0 10px;font-size:26px}.game-entry p{margin:0;color:#b0b7c7;font-size:18px}.game-launch{background:#b8a7ff;color:#211b37;border-radius:9px;padding:16px 22px;font-weight:650;margin-left:auto}.game-join{color:#c0b5ff;padding:12px 0;font-size:17px}@media(max-width:600px){.game-entry{padding:24px;gap:20px}.game-entry p{font-size:17px}.game-launch{margin-left:0}.game-join{width:100%}}
+
+.game-entry+.game-entry{margin-top:20px}.catan-logo{width:90px;height:100px;display:grid;place-items:center;color:#f0bf60;font-size:96px;line-height:1}

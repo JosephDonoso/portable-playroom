@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.4.3: expulsión de jugadores por el anfitrión y botón «Abrir sala» más corto.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.5.0: primera versión de Catán para cuatro jugadores, con tablero variable y negociación en un panel lateral.** UNO conserva sus reglas, animaciones y controles de anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -12,8 +12,8 @@ El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda d
 2. Descarga `Portable-Playroom-Windows-amd64.exe` (Windows de 64 bits, Intel o AMD).
 3. Guárdalo en una carpeta y ábrelo con doble clic.
 4. Se abrirá el menú en tu navegador y una consola con la dirección de la sala.
-5. Elige **UNO → Abrir en la tele** y escanea el QR desde cada teléfono, conectado al mismo router.
-6. El primer jugador será el anfitrión. Podrá iniciar cuando haya al menos dos jugadores.
+5. Elige **UNO** o **Catán → Abrir en la tele** y escanea el QR desde cada teléfono, conectado al mismo router.
+6. El primer jugador será el anfitrión. Podrá iniciar UNO desde dos jugadores o Catán cuando estén los cuatro.
 
 **No necesitas instalar Go, Node.js ni dependencias.** El ejecutable contiene el servidor y todos los archivos de la interfaz. No requiere internet para funcionar ni descarga recursos externos. El navegador predeterminado debe estar disponible en el PC.
 
@@ -52,6 +52,30 @@ El puerto inicial es `3000`. Si está ocupado, el programa busca el siguiente di
 - Los jugadores, incluido el anfitrión, controlan la partida desde sus teléfonos.
 - La información privada se envía únicamente al jugador correspondiente.
 - La experiencia funciona en red local sin depender de servicios externos.
+
+## Catán: juego base para cuatro jugadores
+
+Primera versión jugable, sin expansiones. Usa gráficos vectoriales propios y las reglas del [juego base oficial](https://www.catan.com/sites/default/files/2021-06/catan_base_rules_2020_200707.pdf). Implementación independiente, sin afiliación con CATAN.
+
+- Isla variable de 19 hexágonos, con las cantidades del juego base, 18 fichas numéricas siguiendo la espiral A–R y 9 puertos. El ladrón empieza en el desierto.
+- Exactamente cuatro jugadores. Una tirada de dados por asiento, con desempates, determina quién empieza. Colocación inicial en orden de ida y vuelta: 1–2–3–4–4–3–2–1. Recursos iniciales junto al segundo poblado.
+- Producción mediante dos dados, poblados y ciudades; escasez de recursos en el banco; límites de 15 caminos, 5 poblados y 4 ciudades por jugador.
+- Construcción conectada a la red y regla de distancia. Banco 4:1, puertos genéricos 3:1 y específicos 2:1. Comercio y construcción combinados durante el turno.
+- Siete: descarte obligatorio de la mitad de los recursos cuando se tienen más de siete, traslado del ladrón y robo aleatorio de un recurso a un rival vecino.
+- Mazo de 25 cartas: 14 caballeros, 5 puntos de victoria y 2 de cada progreso (caminos, abundancia y monopolio). Una carta jugada por turno; no se pueden jugar cartas recién compradas, salvo los puntos de victoria, que se cuentan automáticamente.
+- Gran ruta comercial desde cinco caminos y mayor ejército desde tres caballeros, con dos puntos cada uno y reglas de empate. Victoria al llegar a diez puntos durante el turno propio.
+
+### Negociación
+
+Pulsa **Negociar**. El jugador activo puede publicar una oferta para toda la mesa. Los demás pueden aceptar, rechazar o proponer una contraoferta dirigida al jugador activo. No se puede comerciar entre dos jugadores ajenos al turno ni regalar recursos o intercambiar desarrollo.
+
+La oferta genera un aviso breve; tocarlo abre el panel lateral. Aceptar expresa interés: el autor selecciona a uno de los que aceptaron y pulsa **Intercambiar**. El servidor verifica de nuevo los recursos de ambas partes y hace el cambio completo de una sola vez. Las ofertas vencen al terminar el turno y pueden retirarse antes. También se avisa al autor cuando alguien acepta.
+
+La tele ve el tablero, los puntos públicos, las cantidades de cartas y las ofertas. Cada teléfono recibe únicamente sus tipos de recursos y sus cartas de desarrollo; los puntos de victoria ocultos no se envían a los rivales. El ladrón no revela públicamente el tipo de recurso robado.
+
+En el teléfono, elige el tipo de construcción y toca un punto o camino iluminado; **Confirmar** realiza la acción. El botón **+** amplía el tablero para elegir con más precisión. El panel de **Desarrollo** incluye la compra y el uso de cartas. **Banco / puertos** aplica automáticamente la mejor proporción disponible.
+
+Desde la tele en el PC anfitrión se puede **Terminar partida** o volver al **Menú de juegos**. Recargar el navegador recupera el asiento mientras siga abierto el programa. Se muestran los jugadores desconectados; Catán no salta sus turnos automáticamente.
 
 ## UNO: controles y reglas
 

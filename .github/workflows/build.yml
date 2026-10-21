@@ -21,6 +21,8 @@ jobs:
         run: go vet ./...
       - name: Test card inspection gestures
         run: node --test tests/motion.test.cjs
+      - name: Validate Catan frontend
+        run: node --check web/catan/app.js
       - name: Build portable executable
         shell: pwsh
         run: ./scripts/build-windows.ps1

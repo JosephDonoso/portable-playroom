@@ -85,7 +85,7 @@ func (a *app) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			_, _ = w.Write(b)
 			return
 		default:
-			files := map[string]string{"/": "index.html", "/play": "index.html", "/app.js": "app.js", "/style.css": "style.css"}
+			files := map[string]string{"/": "index.html", "/play": "index.html", "/app.js": "app.js", "/motion.js": "motion.js", "/style.css": "style.css"}
 			if f, ok := files[r.URL.Path]; ok {
 				b, e := assets.ReadFile("web/uno/" + f)
 				if e != nil {

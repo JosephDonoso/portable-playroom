@@ -19,6 +19,8 @@ jobs:
         run: go test ./...
       - name: Vet
         run: go vet ./...
+      - name: Test card inspection gestures
+        run: node --test tests/motion.test.cjs
       - name: Build portable executable
         shell: pwsh
         run: ./scripts/build-windows.ps1

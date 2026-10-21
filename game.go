@@ -319,22 +319,23 @@ type PublicPlayer struct {
 	Host       bool   `json:"host"`
 }
 type State struct {
-	CanSkipTurn bool           `json:"canSkipTurn"`
-	Revision    int            `json:"revision"`
-	Effect      *Effect        `json:"effect"`
-	Phase       string         `json:"phase"`
-	Round       int            `json:"round"`
-	Players     []PublicPlayer `json:"players"`
-	Top         *Card          `json:"top"`
-	Color       any            `json:"color"`
-	Turn        any            `json:"turn"`
-	Direction   int            `json:"direction"`
-	Winner      any            `json:"winner"`
-	Events      []string       `json:"events"`
-	Me          any            `json:"me"`
-	Hand        []Card         `json:"hand"`
-	Drawn       any            `json:"drawn"`
-	Playable    []string       `json:"playable"`
+	RecentDiscards []Card         `json:"recentDiscards"`
+	CanSkipTurn    bool           `json:"canSkipTurn"`
+	Revision       int            `json:"revision"`
+	Effect         *Effect        `json:"effect"`
+	Phase          string         `json:"phase"`
+	Round          int            `json:"round"`
+	Players        []PublicPlayer `json:"players"`
+	Top            *Card          `json:"top"`
+	Color          any            `json:"color"`
+	Turn           any            `json:"turn"`
+	Direction      int            `json:"direction"`
+	Winner         any            `json:"winner"`
+	Events         []string       `json:"events"`
+	Me             any            `json:"me"`
+	Hand           []Card         `json:"hand"`
+	Drawn          any            `json:"drawn"`
+	Playable       []string       `json:"playable"`
 }
 
 func nullable(s string) any {
@@ -345,6 +346,11 @@ func nullable(s string) any {
 }
 func (g *Game) state(p *Player) State {
 	s := State{Revision: g.Revision, Effect: g.Effect, Phase: g.Phase, Round: g.Round, Players: []PublicPlayer{}, Top: g.Top, Color: nullable(g.Color), Direction: g.Direction, Winner: nullable(g.Winner), Events: append([]string{}, g.Events...), Hand: []Card{}, Playable: []string{}}
+	start := len(g.Discard) - 5
+	if start < 0 {
+		start = 0
+	}
+	s.RecentDiscards = append([]Card{}, g.Discard[start:]...)
 	for i, x := range g.Players {
 		s.Players = append(s.Players, PublicPlayer{ID: x.ID, Name: x.Name, Count: len(x.Hand), Host: i == 0})
 	}

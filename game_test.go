@@ -7,6 +7,23 @@ import (
 	"testing"
 )
 
+func TestRecentDiscardsArePublicAndLimited(t *testing.T) {
+	g := setup(t, 3)
+	for i := 0; i < 8; i++ {
+		g.Discard = append(g.Discard, Card{ID: fmt.Sprint("discard-", i), Color: "red", Value: "1"})
+	}
+	for _, viewer := range []*Player{nil, g.Players[0], g.Players[1]} {
+		state := g.state(viewer)
+		if len(state.RecentDiscards) != 5 || state.RecentDiscards[0].ID != "discard-3" || state.RecentDiscards[4].ID != "discard-7" {
+			t.Fatal("Descarte público incorrecto")
+		}
+		state.RecentDiscards[0].ID = "changed"
+		if g.Discard[4].ID == "changed" {
+			t.Fatal("La vista modificó la partida")
+		}
+	}
+}
+
 func setup(t *testing.T, n int) *Game {
 	t.Helper()
 	g := newGame()

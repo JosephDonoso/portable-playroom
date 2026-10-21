@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.2.1: estado de conexión y salto de turnos desconectados.** Incluye UNO con sala de espera, QR, manos privadas, turnos destacados, selección visual de color y animaciones.
+**v0.3.0: cartas en movimiento y mano compacta.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -51,6 +51,10 @@ El puerto inicial es `3000`. Si está ocupado, el programa busca el siguiente di
 
 Una franja violeta **¡ES TU TURNO!** indica cuándo puedes jugar. Toca una carta iluminada o roba del mazo. Al tocar un comodín, aparece una ventana con cuatro botones grandes de color; puedes cancelar antes de jugar. Hay animaciones al robar, recibir y jugar cartas, y efectos para bloqueo, reversa, +2, +4 y cambio de color. Se respeta la preferencia de movimiento reducido del dispositivo.
 
+Las cartas salen visualmente del mazo y viajan a la mano; al jugarlas, viajan al descarte. Los movimientos de otros jugadores muestran únicamente dorsos. Las últimas cinco cartas públicas forman una pila con ángulos y desplazamientos estables, también al reconectar. El reparto se anima carta por carta; reconectarse no repite movimientos antiguos.
+
+La mano usa cartas superpuestas. En el teléfono, toca o desliza el dedo sobre ellas para ampliar la carta seleccionada; luego pulsa **Jugar carta**. Deslizar no juega una carta accidentalmente. El borde de la mano permite desplazarse cuando tienes muchas cartas. En PC puedes inspeccionar con el ratón o el teclado y jugar haciendo clic en una carta válida. Las cartas que no sirven también pueden inspeccionarse. El selector de color aparece después de confirmar un comodín.
+
 De 2 a 10 jugadores, 7 cartas por persona. Se juega por color o símbolo. Tras robar una carta válida puedes jugar esa carta o pasar; si no sirve, el turno avanza automáticamente. +2 y +4 hacen robar y perder el turno, sin acumulación. +4 solo se permite si no tienes el color actual. En dos jugadores, reversa permite jugar de nuevo. Marca **¡UNO!** antes de jugar tu penúltima carta: olvidarlo suma dos cartas automáticamente. Gana quien se queda sin cartas.
 
 Sin desafíos de +4, puntuación acumulada, límite de tiempo, expulsión de jugadores ni guardado en disco. Una sala UNO por ejecutable; al terminar se puede iniciar otra ronda o abrir la sala para nuevos jugadores. Proyecto independiente, sin afiliación con los titulares de UNO.
@@ -64,6 +68,8 @@ go run .
 go test ./...
 go vet ./...
 ```
+
+Las pruebas de gestos de la interfaz requieren Node.js solo en desarrollo: `node --test tests/motion.test.cjs`. No se incluye Node.js ni se requiere en los equipos que usan el ejecutable.
 
 Opciones:
 
@@ -99,6 +105,8 @@ main.go                  Servidor local y apertura del navegador
 uno.go                   API de UNO y sincronización con los dispositivos
 presence.go              Estado de conexión y salto autorizado por el anfitrión
 game.go                  Reglas y vistas privadas de la partida
+web/uno/motion.js         Recorridos de cartas, pila e inspección de la mano
+tests/motion.test.cjs     Pruebas de gestos y descarte estable
 main_test.go             Pruebas de rutas, recursos y puertos
 game_test.go             Pruebas de reglas, turnos y privacidad
 presence_test.go         Pruebas de conexión, reconexión y permisos de salto

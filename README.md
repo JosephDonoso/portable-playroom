@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.4.2: vista compacta para celulares y controles de partida en la tele.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.4.3: expulsión de jugadores por el anfitrión y botón «Abrir sala» más corto.** Incluye reloj de turno, opciones del anfitrión y acumulaciones de +2/+4. Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -20,6 +20,12 @@ El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda d
 Mantén la consola abierta mientras uses la aplicación. Para detenerla, presiona `Ctrl+C` en esa ventana o ciérrala. Cerrar solamente la pestaña del navegador no detiene el servidor.
 
 **Cerrar el servidor borra la partida.** Recargar el mismo navegador recupera tu lugar mientras el servidor siga abierto. Cada jugador debe usar su propio dispositivo o un perfil de navegador independiente: las pestañas del mismo navegador comparten la identidad.
+
+### Administrar jugadores
+
+Desde su teléfono, el anfitrión puede desplegar **Administrar jugadores** y pulsar **Expulsar** junto al nombre de otro jugador. Está disponible en la sala, durante la ronda y entre rondas. El anfitrión no puede expulsarse.
+
+El expulsado pierde su lugar y sus cartas, recibe un aviso y su identidad anterior deja de permitir acciones. Si tenía el turno, continúa el siguiente jugador según el sentido de juego y se conserva la deuda pendiente. Si quedan menos de dos jugadores, se abre la sala. Las cartas retiradas vuelven al mazo durante una ronda. La expulsión no impide volver a entrar como un jugador nuevo cuando la sala esté abierta.
 
 ### Jugadores desconectados
 

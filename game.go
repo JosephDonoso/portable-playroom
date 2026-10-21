@@ -206,6 +206,9 @@ func (g *Game) act(p *Player, a Action) error {
 	if p == nil {
 		return errors.New("Vuelve a entrar a la sala.")
 	}
+	if a.Type == "kick" {
+		return g.kick(p, a.Target)
+	}
 	if a.Type == "configure" {
 		return g.configure(p, a.Options)
 	}
@@ -216,15 +219,7 @@ func (g *Game) act(p *Player, a Action) error {
 		if p != g.Players[0] || g.Phase == "playing" {
 			return errors.New("No se puede abrir la sala ahora.")
 		}
-		g.Phase = "lobby"
-		for _, x := range g.Players {
-			x.Hand = []Card{}
-		}
-		g.Top = nil
-		g.Pending = 0
-		g.PendingKind = ""
-		g.LastPayment = nil
-		g.Deadline = time.Time{}
+		g.openLobby()
 		return nil
 	}
 	if g.Phase != "playing" {
@@ -346,6 +341,7 @@ type PublicPlayer struct {
 	Host       bool   `json:"host"`
 }
 type State struct {
+	Expelled       bool            `json:"expelled,omitempty"`
 	Options        Options         `json:"options"`
 	DeadlineMS     int64           `json:"deadlineMS"`
 	ServerNowMS    int64           `json:"serverNowMS"`
@@ -380,7 +376,12 @@ func nullable(s string) any {
 	return s
 }
 func (g *Game) state(p *Player) State {
+	expelled := p != nil && g.find(p.Token) != p
+	if expelled {
+		p = nil
+	}
 	s := State{Options: g.Options, Pending: g.Pending, PendingKind: g.PendingKind, LastPayment: g.LastPayment, ServerNowMS: time.Now().UnixMilli(), Revision: g.Revision, Effect: g.Effect, Phase: g.Phase, Round: g.Round, Players: []PublicPlayer{}, Top: g.Top, Color: nullable(g.Color), Direction: g.Direction, Winner: nullable(g.Winner), Events: append([]string{}, g.Events...), Hand: []Card{}, Playable: []string{}}
+	s.Expelled = expelled
 	if !g.Deadline.IsZero() {
 		s.DeadlineMS = g.Deadline.UnixMilli()
 	}

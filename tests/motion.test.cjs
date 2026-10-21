@@ -6,7 +6,7 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../web/uno/motion.js'),'utf8');
 
 function fixture(){
- const handlers={};let played=null;
+ const handlers={};let played=null;const frames=new Map();let frameID=0,clock=0;
  const makeCard=(id,x,playable)=>{
   const classes=new Set();
   const el={dataset:{card:id,playable:String(playable)},style:{setProperty(){}},classList:{add:c=>classes.add(c),remove:c=>classes.delete(c)},getBoundingClientRect:()=>({left:x,top:100,width:90,height:135}),getAttribute:()=>id,closest:()=>el,focus(){},classes};return el;
@@ -16,10 +16,10 @@ function fixture(){
  const label={textContent:''};
  const hand={children:cards,style:{setProperty(){}},scrollLeft:0,querySelectorAll:()=>cards,getBoundingClientRect:()=>({left:0,right:180}),addEventListener:(name,fn)=>handlers[name]=fn,setPointerCapture(){},releasePointerCapture(){}};
  const document={querySelector:s=>s==='.hand'?hand:null,querySelectorAll:()=>[],getElementById:id=>id==='inspect-play'?button:label};
- const context={window:{},document,matchMedia:()=>({matches:false}),performance:{now:()=>1000},setTimeout};
+ const context={window:{},document,matchMedia:()=>({matches:false}),performance:{now:()=>1000},setTimeout,requestAnimationFrame:fn=>{frames.set(++frameID,fn);return frameID},cancelAnimationFrame:id=>frames.delete(id)};
  vm.runInNewContext(source,context);const motion=context.window.UnoMotion;motion.bindHand(id=>played=id);
  const event=(card,x,extra={})=>({pointerType:'touch',pointerId:1,target:card,clientX:x,clientY:120,...extra});
- return {motion,cards,handlers,button,label,event,get played(){return played}};
+ return {motion,cards,handlers,button,label,event,hand,frames,step(){clock+=16;const batch=[...frames.values()];frames.clear();batch.forEach(fn=>fn(clock))},get played(){return played}};
 }
 
 test('Touch inspects a card without playing it, explicit button plays',()=>{
@@ -55,4 +55,21 @@ test('Focus on a different card during a touch drag cannot create a second selec
  const f=fixture();f.handlers.pointerdown(f.event(f.cards[0],10));f.handlers.pointermove(f.event(f.cards[0],95));
  f.handlers.focusin({target:f.cards[0]});
  assert.ok(f.cards[2].classes.has('inspecting'));assert.equal(f.cards.filter(c=>c.classes.has('inspecting')).length,1);
+});
+
+test('Hand sorts wilds first, colors together, numbers ascending and colored actions last',()=>{
+ const f=fixture();const cards=[['blue','draw2'],['red','reverse'],['wild','draw4'],['red','9'],['green','0'],['red','2'],['wild','wild'],['red','skip'],['blue','1'],['red','draw2'],['yellow','7'],['red','0']].map(([color,value],id)=>({color,value,id}));
+ const original=JSON.stringify(cards);const sorted=f.motion.sortHand(cards);
+ assert.deepEqual(Array.from(sorted,c=>c.color+':'+c.value),['wild:wild','wild:draw4','red:0','red:2','red:9','red:skip','red:reverse','red:draw2','yellow:7','green:0','blue:1','blue:draw2']);assert.equal(JSON.stringify(cards),original);
+});
+test('Holding a finger still at either edge scrolls continuously and release stops it',()=>{
+ const f=fixture();f.hand.scrollLeft=100;
+ f.handlers.pointerdown(f.event(f.cards[2],175));f.step();const first=f.hand.scrollLeft;f.step();f.step();assert.ok(f.hand.scrollLeft>first&&first>100);
+ f.handlers.pointermove(f.event(f.cards[0],5));f.step();const left=f.hand.scrollLeft;f.step();assert.ok(f.hand.scrollLeft<left);
+ f.handlers.pointerup(f.event(f.cards[0],5));const stopped=f.hand.scrollLeft;f.step();assert.equal(f.hand.scrollLeft,stopped);assert.equal(f.frames.size,0);
+});
+test('Returning to the center or cancelling stops automatic movement',()=>{
+ const f=fixture();f.hand.scrollLeft=100;f.handlers.pointerdown(f.event(f.cards[2],175));f.step();
+ f.handlers.pointermove(f.event(f.cards[1],90));const center=f.hand.scrollLeft;f.step();f.step();assert.equal(f.hand.scrollLeft,center);
+ f.handlers.pointermove(f.event(f.cards[2],175));f.step();f.handlers.pointercancel();const stopped=f.hand.scrollLeft;f.step();assert.equal(f.hand.scrollLeft,stopped);assert.equal(f.frames.size,0);assert.equal(f.played,null);
 });

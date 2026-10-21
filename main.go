@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const version = "0.3.1"
+const version = "0.3.2"
 
 //go:embed web/* THIRD_PARTY_NOTICES.txt
 var assets embed.FS

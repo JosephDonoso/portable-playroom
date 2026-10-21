@@ -2,7 +2,7 @@
 
 Una sala de juegos de mesa portable y autohosteada: el PC se conecta a la tele como pantalla compartida y los jugadores usan sus teléfonos desde el navegador, en la misma red local.
 
-**v0.3.1: correcciones de la mano móvil y selección única.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
+**v0.3.2: mano ordenada y desplazamiento automático en los bordes.** Incluye reparto y recorridos entre mazo, mano y descarte; descarte con cartas superpuestas e inclinadas; inspección táctil de la mano. Se mantienen los indicadores de conexión y el salto de turnos desconectados por el anfitrión.
 
 El menú usa texto grande, fondo gris carbón y acentos azul violeta. La ayuda de conexión se despliega solo cuando la necesitas.
 
@@ -52,6 +52,10 @@ El puerto inicial es `3000`. Si está ocupado, el programa busca el siguiente di
 Una franja violeta **¡ES TU TURNO!** indica cuándo puedes jugar. Toca una carta iluminada o roba del mazo. Al tocar un comodín, aparece una ventana con cuatro botones grandes de color; puedes cancelar antes de jugar. Hay animaciones al robar, recibir y jugar cartas, y efectos para bloqueo, reversa, +2, +4 y cambio de color. Se respeta la preferencia de movimiento reducido del dispositivo.
 
 Las cartas salen visualmente del mazo y viajan a la mano; al jugarlas, viajan al descarte. Los movimientos de otros jugadores muestran únicamente dorsos. Las últimas cinco cartas públicas forman una pila con ángulos y desplazamientos estables, también al reconectar. El reparto se anima carta por carta; reconectarse no repite movimientos antiguos.
+
+La mano se ordena con los comodines multicolor primero (comodín y +4), seguidos por rojo, amarillo, verde y azul. Dentro de cada color aparecen los números de menor a mayor y luego bloqueo, reversa y +2. El orden es visual y no cambia las reglas ni la identidad de las cartas.
+
+Mantener el dedo en un borde desplaza la mano continuamente en esa dirección, más rápido cuanto más cerca esté del extremo. Se detiene al soltar el dedo, cancelar el gesto o volver al centro. No es necesario seguir moviendo el dedo para recorrer una mano larga.
 
 La mano usa cartas superpuestas, con margen lateral para ampliar las cartas de los extremos sin recortarlas. Solo la carta seleccionada se eleva; los eventos de ratón emulados después de un toque no cambian la selección. En el teléfono, toca o desliza el dedo sobre ellas para ampliar la carta seleccionada; luego pulsa **Jugar carta**. Deslizar no juega una carta accidentalmente. El borde de la mano permite desplazarse cuando tienes muchas cartas. En PC puedes inspeccionar con el ratón o el teclado y jugar haciendo clic en una carta válida. Las cartas que no sirven también pueden inspeccionarse. El selector de color aparece después de confirmar un comodín.
 

@@ -1,7 +1,7 @@
 /* Card motion uses only the recipient's own hand and public counts/discards. */
 window.UnoMotion=(()=>{
  const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
- const flights=new Set(),landing=new Map();let selected=null,suppressClickUntil=0;
+ const flights=new Set(),landing=new Map();let selected=null,suppressClickUntil=0,cleanupHand=()=>{};
  const rect=el=>el?.getBoundingClientRect();
  function capture(){return {cards:new Map([...document.querySelectorAll('[data-card]')].map(el=>[el.dataset.card,{rect:rect(el),html:el.outerHTML}])),players:new Map([...document.querySelectorAll('[data-player]')].map(el=>[el.dataset.player,rect(el)])),deck:rect(document.querySelector('.draw-pile')),scroll:document.querySelector('.hand')?.scrollLeft||0};}
  function angle(id){let n=0;for(const c of id)n=(n*31+c.charCodeAt(0))>>>0;return {x:(n%17)-8,y:((n>>>4)%13)-6,angle:((n>>>8)%23)-11};}
@@ -24,13 +24,20 @@ window.UnoMotion=(()=>{
  }
  function hideTarget(id,hide){document.querySelectorAll('[data-card],[data-discard]').forEach(el=>{if((el.dataset.card||el.dataset.discard)===id)el.classList.toggle('motion-landing',hide)});}
  function backHTML(){return '<div class="card back"><span>UNO</span></div>';}
+ function sortHand(cards){
+  const colors=['wild','red','yellow','green','blue'];
+  const value=c=>/^\d$/.test(c.value)?Number(c.value):({skip:10,reverse:11,draw2:12,wild:0,draw4:1})[c.value]??99;
+  return [...cards].sort((a,b)=>(colors.indexOf(a.color)-colors.indexOf(b.color))||(value(a)-value(b)));
+ }
  function afterUpdate(previous,next,before,draw){
+  const currentHand=document.querySelector('.hand');if(before&&currentHand)currentHand.scrollLeft=before.scroll;
+
   if(!previous||!before||next.phase==='lobby'||previous.revision===next.revision)return;
   const deck=rect(document.querySelector('.draw-pile'));if(!deck)return;
   const deal=previous.phase==='lobby'||previous.round!==next.round;
   const oldIDs=new Set(previous.hand.map(c=>c.id));
   const received=next.hand.filter(c=>!oldIDs.has(c.id));
-  const hand=document.querySelector('.hand');if(received.length&&hand&&!deal)hand.scrollLeft=hand.scrollWidth;
+  const hand=document.querySelector('.hand');if(received.length&&hand&&!deal){const last=received.at(-1);const target=document.querySelector(`[data-card="${last.id}"]`);const r=rect(target),h=rect(hand);if(r&&h){if(r.left<h.left+20)hand.scrollLeft-=h.left+20-r.left;else if(r.right>h.right-20)hand.scrollLeft+=r.right-h.right+20;}}
   received.forEach((c,i)=>{const target=document.querySelector(`[data-card="${c.id}"]`);fly(deck,rect(target),draw(c,false),{delay:i*110,flip:true,hide:c.id});});
   const oldPlayers=new Map(previous.players.map(p=>[p.id,p]));
   for(const p of next.players){if(p.id===next.me)continue;const old=oldPlayers.get(p.id);const added=deal?p.count:Math.max(0,p.count-(old?.count||0));const target=rect(document.querySelector(`[data-player="${p.id}"]`));if(!target)continue;for(let i=0;i<Math.min(added,deal?7:4);i++){const to={left:target.left+target.width/2-24,top:target.top+12,width:48,height:72};fly(deck,to,backHTML(),{delay:i*90});}}
@@ -38,26 +45,28 @@ window.UnoMotion=(()=>{
  }
  function select(el){if(selected===el)return;selected?.classList.remove('inspecting');selected=el;selected?.classList.add('inspecting');const label=document.getElementById('hand-selection'),button=document.getElementById('inspect-play');if(label)label.textContent=selected?.getAttribute('aria-label')||'Desliza el dedo sobre las cartas para verlas.';if(button)button.disabled=!selected||selected.dataset.playable!=='true';}
  function bindHand(play){
-  const hand=document.querySelector('.hand');selected=null;if(!hand)return;
+  cleanupHand();const hand=document.querySelector('.hand');selected=null;if(!hand)return;
   hand.style.setProperty('--hand-count',hand.children.length);document.getElementById('inspect-play')?.addEventListener('click',()=>{if(selected?.dataset.playable==='true')play(selected.dataset.card)});
   [...hand.children].forEach((el,i)=>{el.style.setProperty('--card-index',i);if(landing.has(el.dataset.card))el.classList.add('motion-landing')});
-  let gesture=null,lastTouchAt=-Infinity;
-  hand.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;lastTouchAt=performance.now();const el=e.target.closest('[data-card]');if(!el)return;gesture={x:e.clientX,y:e.clientY,moved:false};hand.setPointerCapture(e.pointerId);select(el);});
+  let gesture=null,lastTouchAt=-Infinity,frame=null,lastFrame=null;
+  function stopEdge(){if(frame!==null)cancelAnimationFrame(frame);frame=null;lastFrame=null;}
+  function inspectAt(x){const cards=[...hand.querySelectorAll('[data-card]')];let closest=null,dist=Infinity;for(const card of cards){const r=card.getBoundingClientRect(),d=Math.abs(x-(r.left+Math.min(r.width,35)/2));if(d<dist){dist=d;closest=card}}select(closest);}
+  function edgeTick(now){frame=null;if(!gesture||hand.isConnected===false){stopEdge();return;}const r=hand.getBoundingClientRect(),x=gesture.lastX,zone=38;let speed=0;if(x<r.left+zone)speed=-Math.min(1,(r.left+zone-x)/zone);else if(x>r.right-zone)speed=Math.min(1,(x-r.right+zone)/zone);const dt=lastFrame===null?16:Math.min(32,now-lastFrame);lastFrame=now;if(speed){const before=hand.scrollLeft;hand.scrollLeft+=Math.sign(speed)*(80+Math.abs(speed)*340)*dt/1000;if(hand.scrollLeft!==before){gesture.moved=true;inspectAt(x)}}frame=requestAnimationFrame(edgeTick);}
+  cleanupHand=()=>{gesture=null;stopEdge()};
+
+  hand.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;lastTouchAt=performance.now();const el=e.target.closest('[data-card]');if(!el)return;gesture={x:e.clientX,y:e.clientY,lastX:e.clientX,moved:false};hand.setPointerCapture(e.pointerId);select(el);frame=requestAnimationFrame(edgeTick);});
   hand.addEventListener('pointermove',e=>{
    if(e.pointerType==='mouse'){if(performance.now()-lastTouchAt>=800)select(e.target.closest('[data-card]'));return;}
    if(!gesture)return;
    if(Math.abs(e.clientX-gesture.x)>9)gesture.moved=true;
-   if(Math.abs(e.clientY-gesture.y)>28&&!gesture.moved){select(null);return;}
-   const cards=[...hand.querySelectorAll('[data-card]')];
-   let closest=null,dist=Infinity;for(const card of cards){const r=card.getBoundingClientRect(),d=Math.abs(e.clientX-(r.left+Math.min(r.width,35)/2));if(d<dist){dist=d;closest=card}}
-   select(closest);
-   const r=hand.getBoundingClientRect();if(e.clientX>r.right-25)hand.scrollLeft+=12;if(e.clientX<r.left+25)hand.scrollLeft-=12;
+   if(Math.abs(e.clientY-gesture.y)>28&&!gesture.moved){gesture=null;stopEdge();select(null);return;}
+   gesture.lastX=e.clientX;inspectAt(e.clientX);
   });
-  hand.addEventListener('pointerup',e=>{if(!gesture)return;suppressClickUntil=performance.now()+400;const chosen=selected;const moved=gesture.moved;gesture=null;try{hand.releasePointerCapture(e.pointerId)}catch{}if(!moved&&chosen)chosen.focus({preventScroll:true});});
-  hand.addEventListener('pointercancel',()=>{gesture=null;select(null)});
+  hand.addEventListener('pointerup',e=>{if(!gesture)return;suppressClickUntil=performance.now()+400;const chosen=selected;const moved=gesture.moved;gesture=null;stopEdge();try{hand.releasePointerCapture(e.pointerId)}catch{}if(!moved&&chosen)chosen.focus({preventScroll:true});});
+  hand.addEventListener('pointercancel',()=>{gesture=null;stopEdge();select(null)});hand.addEventListener('lostpointercapture',()=>{gesture=null;stopEdge()});
   hand.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&performance.now()-lastTouchAt>=800)select(null)});
   hand.addEventListener('click',e=>{if(performance.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
   hand.addEventListener('focusin',e=>{if(!gesture)select(e.target.closest('[data-card]'))});
  }
- return {capture,discardHTML,afterUpdate,bindHand,get busy(){return flights.size>0}};
+ return {sortHand,capture,discardHTML,afterUpdate,bindHand,get busy(){return flights.size>0}};
 })();

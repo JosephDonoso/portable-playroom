@@ -41,10 +41,10 @@ window.UnoMotion=(()=>{
   const hand=document.querySelector('.hand');selected=null;if(!hand)return;
   hand.style.setProperty('--hand-count',hand.children.length);document.getElementById('inspect-play')?.addEventListener('click',()=>{if(selected?.dataset.playable==='true')play(selected.dataset.card)});
   [...hand.children].forEach((el,i)=>{el.style.setProperty('--card-index',i);if(landing.has(el.dataset.card))el.classList.add('motion-landing')});
-  let gesture=null;
-  hand.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;const el=e.target.closest('[data-card]');if(!el)return;gesture={x:e.clientX,y:e.clientY,moved:false};hand.setPointerCapture(e.pointerId);select(el);});
+  let gesture=null,lastTouchAt=-Infinity;
+  hand.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;lastTouchAt=performance.now();const el=e.target.closest('[data-card]');if(!el)return;gesture={x:e.clientX,y:e.clientY,moved:false};hand.setPointerCapture(e.pointerId);select(el);});
   hand.addEventListener('pointermove',e=>{
-   if(e.pointerType==='mouse'){select(e.target.closest('[data-card]'));return;}
+   if(e.pointerType==='mouse'){if(performance.now()-lastTouchAt>=800)select(e.target.closest('[data-card]'));return;}
    if(!gesture)return;
    if(Math.abs(e.clientX-gesture.x)>9)gesture.moved=true;
    if(Math.abs(e.clientY-gesture.y)>28&&!gesture.moved){select(null);return;}
@@ -55,9 +55,9 @@ window.UnoMotion=(()=>{
   });
   hand.addEventListener('pointerup',e=>{if(!gesture)return;suppressClickUntil=performance.now()+400;const chosen=selected;const moved=gesture.moved;gesture=null;try{hand.releasePointerCapture(e.pointerId)}catch{}if(!moved&&chosen)chosen.focus({preventScroll:true});});
   hand.addEventListener('pointercancel',()=>{gesture=null;select(null)});
-  hand.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')select(null)});
+  hand.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&performance.now()-lastTouchAt>=800)select(null)});
   hand.addEventListener('click',e=>{if(performance.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}},{capture:true});
-  hand.addEventListener('focusin',e=>select(e.target.closest('[data-card]')));
+  hand.addEventListener('focusin',e=>{if(!gesture)select(e.target.closest('[data-card]'))});
  }
  return {capture,discardHTML,afterUpdate,bindHand,get busy(){return flights.size>0}};
 })();

@@ -44,3 +44,15 @@ test('Discard positions are deterministic and show public cards in order',()=>{
  const one=f.motion.discardHTML(cards,false,draw),two=f.motion.discardHTML(cards,false,draw);
  assert.equal(one,two);assert.ok(one.includes('--pile-angle:'));assert.ok(one.includes('--pile-x:'));assert.ok(one.indexOf('public-one')<one.indexOf('public-three'));
 });
+
+test('Touch selection ignores synthetic mouse hover and retains only one lifted card',()=>{
+ const f=fixture();f.handlers.pointerdown(f.event(f.cards[0],10));f.handlers.pointermove(f.event(f.cards[0],95));f.handlers.pointerup(f.event(f.cards[0],95));
+ f.handlers.pointermove(f.event(f.cards[0],10,{pointerType:'mouse'}));
+ assert.equal(f.label.textContent,'three');assert.equal(f.cards.filter(c=>c.classes.has('inspecting')).length,1);
+ f.handlers.pointerleave({pointerType:'mouse'});assert.equal(f.label.textContent,'three');
+});
+test('Focus on a different card during a touch drag cannot create a second selection',()=>{
+ const f=fixture();f.handlers.pointerdown(f.event(f.cards[0],10));f.handlers.pointermove(f.event(f.cards[0],95));
+ f.handlers.focusin({target:f.cards[0]});
+ assert.ok(f.cards[2].classes.has('inspecting'));assert.equal(f.cards.filter(c=>c.classes.has('inspecting')).length,1);
+});
